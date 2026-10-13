@@ -33,8 +33,8 @@ jobs:
       - name: Prepare Laravel
         run: |
           cp .env.example .env
-          grep -q '^SESSION_DRIVER=' .env || echo 'SESSION_DRIVER=cookie' >> .env
-          sed -i 's/^APP_DEBUG=.*/APP_DEBUG=true/' .env
+          # Static mirror needs no persistence; empty sqlite has no session/cache tables.
+          sed -i 's/^SESSION_DRIVER=.*/SESSION_DRIVER=cookie/; s/^CACHE_STORE=.*/CACHE_STORE=file/; s/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=sync/' .env
           touch database/database.sqlite
           php artisan key:generate
       - run: npm ci
