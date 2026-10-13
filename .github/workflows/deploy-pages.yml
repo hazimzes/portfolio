@@ -1,0 +1,67 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mbstring, sqlite3
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+      - name: Prepare Laravel
+        run: |
+          cp .env.example .env
+          grep -q '^SESSION_DRIVER=' .env || echo 'SESSION_DRIVER=cookie' >> .env
+          touch database/database.sqlite
+          php artisan key:generate
+      - run: npm ci
+      - run: npm run build
+      - name: Mirror rendered site to static files
+        run: |
+          php artisan serve --host 127.0.0.1 --port 8090 > /tmp/serve.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -sf http://127.0.0.1:8090/ > /dev/null && break
+            sleep 1
+          done
+          wget -q --mirror --convert-links --adjust-extension --page-requisites --no-parent http://127.0.0.1:8090/
+          mkdir out
+          cp "127.0.0.1:8090/index.html" out/
+          cp -r public/build public/images public/files out/
+          cp public/favicon.ico public/robots.txt out/ 2>/dev/null || true
+          node scripts/rewrite-base-url.cjs out http://127.0.0.1:8090 /portfolio
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: out
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
