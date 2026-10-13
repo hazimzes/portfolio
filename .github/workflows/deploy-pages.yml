@@ -49,7 +49,9 @@ jobs:
             curl -sf http://127.0.0.1:8090/ > /dev/null && break
             sleep 1
           done
-          curl -s http://127.0.0.1:8090/ | grep -o "<title>[^<]*" || true
+          curl -s http://127.0.0.1:8090/ | grep -oE "<title>[^<]*|class=\"[^"]*exception[^"]*\"|<h1[^>]*>[^<]*" | head -5 || true
+          curl -s http://127.0.0.1:8090/ | head -c 1500 || true
+          echo ""
           tail -30 storage/logs/laravel.log 2>/dev/null || true
           tail -5 /tmp/serve.log || true
           # robots=off: wget's automatic /robots.txt request 404s on Laravel (no route).
