@@ -50,6 +50,7 @@ jobs:
             sleep 1
           done
           curl -s http://127.0.0.1:8090/ | grep -o "<title>[^<]*" || true
+          tail -30 storage/logs/laravel.log 2>/dev/null || true
           tail -5 /tmp/serve.log || true
           # robots=off: wget's automatic /robots.txt request 404s on Laravel (no route).
           wget -o /tmp/wget.log --mirror --convert-links --adjust-extension --page-requisites --no-parent -e robots=off http://127.0.0.1:8090/ \
