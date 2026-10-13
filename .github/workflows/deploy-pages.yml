@@ -45,7 +45,8 @@ jobs:
             curl -sf http://127.0.0.1:8090/ > /dev/null && break
             sleep 1
           done
-          wget -q --mirror --convert-links --adjust-extension --page-requisites --no-parent http://127.0.0.1:8090/
+          # robots=off: wget's automatic /robots.txt request 404s on Laravel (no route).
+          wget -q --mirror --convert-links --adjust-extension --page-requisites --no-parent -e robots=off http://127.0.0.1:8090/
           mkdir out
           cp "127.0.0.1:8090/index.html" out/
           cp -r public/build public/images public/files out/
