@@ -46,7 +46,8 @@ jobs:
             sleep 1
           done
           # robots=off: wget's automatic /robots.txt request 404s on Laravel (no route).
-          wget -q --mirror --convert-links --adjust-extension --page-requisites --no-parent -e robots=off http://127.0.0.1:8090/
+          wget -o /tmp/wget.log --mirror --convert-links --adjust-extension --page-requisites --no-parent -e robots=off http://127.0.0.1:8090/ \
+            || { tail -30 /tmp/wget.log; exit 1; }
           mkdir out
           cp "127.0.0.1:8090/index.html" out/
           cp -r public/build public/images public/files out/
