@@ -34,9 +34,13 @@ jobs:
         run: |
           cp .env.example .env
           grep -q '^SESSION_DRIVER=' .env || echo 'SESSION_DRIVER=cookie' >> .env
+          sed -i 's/^APP_DEBUG=.*/APP_DEBUG=true/' .env
           touch database/database.sqlite
           php artisan key:generate
       - run: npm ci
+      - name: Diagnose render
+        if: runner.debug == '1'
+        run: echo skipped
       - run: npm run build
       - name: Mirror rendered site to static files
         run: |
@@ -45,6 +49,8 @@ jobs:
             curl -sf http://127.0.0.1:8090/ > /dev/null && break
             sleep 1
           done
+          curl -s http://127.0.0.1:8090/ | grep -o "<title>[^<]*" || true
+          tail -5 /tmp/serve.log || true
           # robots=off: wget's automatic /robots.txt request 404s on Laravel (no route).
           wget -o /tmp/wget.log --mirror --convert-links --adjust-extension --page-requisites --no-parent -e robots=off http://127.0.0.1:8090/ \
             || { tail -30 /tmp/wget.log; exit 1; }
